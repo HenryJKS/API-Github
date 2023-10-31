@@ -1,7 +1,5 @@
-import 'dart:js_interop';
-
 import 'package:flutter/material.dart';
-import 'package:github_api_demo/models/user.dart';
+import 'package:github_api_demo/api/github_api.dart';
 import 'package:github_api_demo/pages/following_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -13,7 +11,6 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final TextEditingController _controller = TextEditingController();
-  final getUserAPI = GithubApi();
   bool isLoading = false;
   String? errorMessage;
 
@@ -89,10 +86,30 @@ class _HomePageState extends State<HomePage> {
                           style: TextStyle(color: Colors.white),
                         ),
                 ),
-                onPressed: () {
+                onPressed: () async {
                   setState(() {
-                    getUser();
+                    errorMessage = "";
+                    isLoading = true;
                   });
+                  final username = _controller.text;
+                  final api = GithubApi();
+                  final user = await api.findUser(username);
+                  if (user == null) {
+                    setState(() {
+                      errorMessage = "Usuário não encontrado";
+                      isLoading = false;
+                    });
+                  } else {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: ((context) => FollowingPage(user)),
+                      ),
+                    );
+                    setState(() {
+                      isLoading = false;
+                    });
+                  }
                 },
               )
             ]),
@@ -100,26 +117,5 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
     );
-  }
-
-  getUser() async {
-    if (_controller.text.isEmpty || _controller.text.isNull) {
-      setState(() {
-        errorMessage = 'Insira o nome do usuario';
-      });
-    } else {
-      final user = await getUserAPI.getUser(_controller.text);
-      if (user == null) {
-        setState(() {
-          errorMessage = 'Usuario Inexistente';
-        });
-      } else {
-        Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => FollowingPage(),
-            ));
-      }
-    }
   }
 }
